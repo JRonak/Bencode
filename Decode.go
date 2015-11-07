@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -167,6 +168,21 @@ func (reader *Reader) decode() (interface{}, int) {
 
 func Decode(handle io.Reader) (map[string]interface{}, error) {
 	reader := Reader{bufio.NewReader(handle)}
+	firstByte, err := reader.ReadByte()
+	if err != nil {
+		logErr(err)
+		return nil, err
+	}
+	if firstByte != 'd' {
+		return nil, invalidEncodedErr
+	}
+	x, e := reader.dict()
+	return x, e
+}
+
+func DecodeString(str string) (map[string]interface{}, error) {
+	buf := strings.NewReader(str)
+	reader := Reader{bufio.NewReader(buf)}
 	firstByte, err := reader.ReadByte()
 	if err != nil {
 		logErr(err)

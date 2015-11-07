@@ -102,6 +102,23 @@ func (writer *Writer) writeDict(data interface{}) error {
 	return nil
 }
 
+func checkEmpty(r reflect.Value) bool {
+	if checkStr(r.Kind()) {
+		if r.String() == "" {
+			return true
+		}
+	} else if checkInt(r.Kind()) {
+		if r.Int() == 0 {
+			return true
+		}
+	} else if checkUint(r.Kind()) {
+		if r.Uint() == 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func (writer *Writer) writeStruct(data interface{}) error {
 	_, e := writer.Write([]byte("d"))
 	if e != nil {
@@ -110,10 +127,26 @@ func (writer *Writer) writeStruct(data interface{}) error {
 	r := reflect.ValueOf(data)
 	t := r.Type()
 	for i := 0; i < t.NumField(); i++ {
+		if isIgnore(t.Field(i)) {
+			continue
+		}
+		kind := (r.FieldByIndex(t.Field(i).Index).Kind())
+		//kind == reflect.Array || kind == reflect.Struct ||
+		if kind == reflect.Slice || kind == reflect.Map || kind == reflect.Ptr {
+			if r.FieldByIndex(t.Field(i).Index).IsNil() == true {
+				continue
+			}
+		}
 		if (r.FieldByIndex(t.Field(i).Index).CanInterface()) == false {
 			continue
 		}
-		if e = writer.detectType(t.Field(i).Name); e != nil {
+		name := getTag(t.Field(i))
+		if isOmitEmpty(t.Field(i)) {
+			if checkEmpty(r.Field(i)) {
+				continue
+			}
+		}
+		if e = writer.detectType(name); e != nil {
 			return e
 		}
 		if e = writer.detectType(r.FieldByIndex(t.Field(i).Index).Interface()); e != nil {
@@ -133,6 +166,9 @@ func (writer *Writer) detectType(data interface{}) error {
 
 	switch r.Kind() {
 	case reflect.Ptr:
+		if r.IsNil() {
+			return nil
+		}
 		writer.detectType(r.Elem().Interface())
 	case reflect.Array, reflect.Slice:
 		writer.writeList(data)
@@ -154,17 +190,17 @@ func (writer *Writer) detectType(data interface{}) error {
 			return e
 		}
 	default:
-		fmt.Println(r.Kind())
+		return unknownTypeError
 
 	}
 	return nil
 }
 
-func Encode(data interface{}) string {
+func Encode(data interface{}) (string, error) {
 	buf := new(bytes.Buffer)
 	writer := Writer{buf}
-	writer.detectType(data)
-	return buf.String()
+	e := writer.detectType(data)
+	return buf.String(), e
 }
 
 /*
