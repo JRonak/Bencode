@@ -9,11 +9,6 @@ import (
 	"strconv"
 )
 
-type sex struct {
-	A int
-	B int
-}
-
 type Writer struct {
 	io.Writer
 }
@@ -202,13 +197,3 @@ func Encode(data interface{}) (string, error) {
 	e := writer.detectType(data)
 	return buf.String(), e
 }
-
-/*
-func main() {
-
-	y := sex{}
-	y.A = 1
-	y.B = 2
-	fmt.Println(Encode(y))
-}
-*/

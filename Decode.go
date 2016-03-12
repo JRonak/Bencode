@@ -194,16 +194,3 @@ func DecodeString(str string) (map[string]interface{}, error) {
 	x, e := reader.dict()
 	return x, e
 }
-
-/*
-func main() {
-	handle, e := os.Open("a")
-	logErr(e)
-	reader := Reader{bufio.NewReader(handle)}
-	x, e := reader.BeginDecode()
-	if e != nil {
-		fmt.Println(e)
-	} else {
-		fmt.Println(x)
-	}
-}*/
